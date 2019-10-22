@@ -221,6 +221,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         private static final long serialVersionUID = -3000897897090466540L;
 
         final void lock() {
+            // 调用AQS的acquire()方法获取锁
+            // 注意，这里传的值为1
             acquire(1);
         }
 
@@ -229,22 +231,39 @@ public class ReentrantLock implements Lock, java.io.Serializable {
          * recursive call or no waiters or is first.
          */
         protected final boolean tryAcquire(int acquires) {
+            // 当前线程
             final Thread current = Thread.currentThread();
+            // 查看当前状态变量的值
             int c = getState();
+            // 如果状态变量的值为0，说明暂时还没有人占有锁
             if (c == 0) {
+                // 如果没有其它线程在排队，那么当前线程尝试更新state的值为1
                 if (!hasQueuedPredecessors() &&
                     compareAndSetState(0, acquires)) {
+                    // 当前线程获取了锁，把自己设置到exclusiveOwnerThread变量中
+                    // exclusiveOwnerThread是AQS的父类AbstractOwnableSynchronizer中提供的变量
                     setExclusiveOwnerThread(current);
+                    // 返回true说明成功获取了锁
                     return true;
                 }
             }
+            // 如果当前线程本身就占有着锁，现在又尝试获取锁
+            // 那么，直接让它获取锁并返回true
             else if (current == getExclusiveOwnerThread()) {
+                // 状态变量state的值加1
                 int nextc = c + acquires;
+                // 如果溢出了，则报错
                 if (nextc < 0)
                     throw new Error("Maximum lock count exceeded");
+                // 设置到state中
+                // 这里不需要CAS更新state
+                // 因为当前线程占有着锁，其它线程只会CAS把state从0更新成1，是不会成功的
+                // 所以不存在竞争，自然不需要使用CAS来更新
                 setState(nextc);
+                // 当线程获取锁成功
                 return true;
             }
+            // 当前线程尝试获取锁失败
             return false;
         }
     }
@@ -282,6 +301,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      * at which time the lock hold count is set to one.
      */
     public void lock() {
+        // 调用的sync属性的lock()方法
+        // 这里的sync是公平锁，所以是FairSync的实例
         sync.lock();
     }
 
