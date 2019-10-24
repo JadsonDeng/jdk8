@@ -1403,6 +1403,7 @@ public abstract class AbstractQueuedSynchronizer
             throws InterruptedException {
         if (Thread.interrupted())
             throw new InterruptedException();
+        // 尝试获取锁，如果失败则排队
         if (tryAcquireShared(arg) < 0)
             doAcquireSharedInterruptibly(arg);
     }
@@ -1442,6 +1443,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final boolean releaseShared(int arg) {
         if (tryReleaseShared(arg)) {
+            // 尝试释放共享锁，如果成功了，就唤醒排队的线程
             doReleaseShared();
             return true;
         }

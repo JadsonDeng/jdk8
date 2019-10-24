@@ -34,12 +34,13 @@
  */
 
 package java.util.concurrent;
+
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
  * A synchronization aid that allows one or more threads to wait until
  * a set of operations being performed in other threads completes.
- *
+ * <p>
  * <p>A {@code CountDownLatch} is initialized with a given <em>count</em>.
  * The {@link #await await} methods block until the current count reaches
  * zero due to invocations of the {@link #countDown} method, after which
@@ -47,7 +48,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * {@link #await await} return immediately.  This is a one-shot phenomenon
  * -- the count cannot be reset.  If you need a version that resets the
  * count, consider using a {@link CyclicBarrier}.
- *
+ * <p>
  * <p>A {@code CountDownLatch} is a versatile synchronization tool
  * and can be used for a number of purposes.  A
  * {@code CountDownLatch} initialized with a count of one serves as a
@@ -56,13 +57,13 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * #countDown}.  A {@code CountDownLatch} initialized to <em>N</em>
  * can be used to make one thread wait until <em>N</em> threads have
  * completed some action, or some action has been completed N times.
- *
+ * <p>
  * <p>A useful property of a {@code CountDownLatch} is that it
  * doesn't require that threads calling {@code countDown} wait for
  * the count to reach zero before proceeding, it simply prevents any
  * thread from proceeding past an {@link #await await} until all
  * threads could pass.
- *
+ * <p>
  * <p><b>Sample usage:</b> Here is a pair of classes in which a group
  * of worker threads use two countdown latches:
  * <ul>
@@ -71,8 +72,8 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * <li>The second is a completion signal that allows the driver to wait
  * until all workers have completed.
  * </ul>
- *
- *  <pre> {@code
+ * <p>
+ * <pre> {@code
  * class Driver { // ...
  *   void main() throws InterruptedException {
  *     CountDownLatch startSignal = new CountDownLatch(1);
@@ -105,15 +106,15 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  *
  *   void doWork() { ... }
  * }}</pre>
- *
+ * <p>
  * <p>Another typical usage would be to divide a problem into N parts,
  * describe each part with a Runnable that executes that portion and
  * counts down on the latch, and queue all the Runnables to an
  * Executor.  When all sub-parts are complete, the coordinating thread
  * will be able to pass through await. (When threads must repeatedly
  * count down in this way, instead use a {@link CyclicBarrier}.)
- *
- *  <pre> {@code
+ * <p>
+ * <pre> {@code
  * class Driver2 { // ...
  *   void main() throws InterruptedException {
  *     CountDownLatch doneSignal = new CountDownLatch(N);
@@ -142,7 +143,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  *
  *   void doWork() { ... }
  * }}</pre>
- *
+ * <p>
  * <p>Memory consistency effects: Until the count reaches
  * zero, actions in a thread prior to calling
  * {@code countDown()}
@@ -150,8 +151,8 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * actions following a successful return from a corresponding
  * {@code await()} in another thread.
  *
- * @since 1.5
  * @author Doug Lea
+ * @since 1.5
  */
 public class CountDownLatch {
     /**
@@ -161,26 +162,37 @@ public class CountDownLatch {
     private static final class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 4982264981922014374L;
 
+        // 传入初始次数
         Sync(int count) {
             setState(count);
         }
 
+        // 获取还剩下的此时
         int getCount() {
             return getState();
         }
 
+        // 尝试获取共享锁
         protected int tryAcquireShared(int acquires) {
+            // 注意，这里state等于0的时候返回的是1，也就是说count减为0的时候获取总是成功
+            // state不等于0的时候返回的是-1，也就是count不为0的时候总是要排队
             return (getState() == 0) ? 1 : -1;
         }
 
+        // 尝试释放锁
         protected boolean tryReleaseShared(int releases) {
             // Decrement count; signal when transition to zero
-            for (;;) {
+            for (; ; ) {
+                // 获取state的值
                 int c = getState();
+                // 等于0了则无法再释放了
                 if (c == 0)
                     return false;
-                int nextc = c-1;
+                // 将count的值减1
+                int nextc = c - 1;
+                // 院子更新state的值
                 if (compareAndSetState(c, nextc))
+                    // 减为0的时候返回true，这时会唤醒后面排队的线程
                     return nextc == 0;
             }
         }
@@ -192,7 +204,7 @@ public class CountDownLatch {
      * Constructs a {@code CountDownLatch} initialized with the given count.
      *
      * @param count the number of times {@link #countDown} must be invoked
-     *        before threads can pass through {@link #await}
+     *              before threads can pass through {@link #await}
      * @throws IllegalArgumentException if {@code count} is negative
      */
     public CountDownLatch(int count) {
@@ -203,9 +215,9 @@ public class CountDownLatch {
     /**
      * Causes the current thread to wait until the latch has counted down to
      * zero, unless the thread is {@linkplain Thread#interrupt interrupted}.
-     *
+     * <p>
      * <p>If the current count is zero then this method returns immediately.
-     *
+     * <p>
      * <p>If the current count is greater than zero then the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of two things happen:
@@ -215,7 +227,7 @@ public class CountDownLatch {
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread.
      * </ul>
-     *
+     * <p>
      * <p>If the current thread:
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
@@ -225,9 +237,10 @@ public class CountDownLatch {
      * interrupted status is cleared.
      *
      * @throws InterruptedException if the current thread is interrupted
-     *         while waiting
+     *                              while waiting
      */
     public void await() throws InterruptedException {
+        // 调用AQS的acquireSharedInterruptibly()方法
         sync.acquireSharedInterruptibly(1);
     }
 
@@ -235,10 +248,10 @@ public class CountDownLatch {
      * Causes the current thread to wait until the latch has counted down to
      * zero, unless the thread is {@linkplain Thread#interrupt interrupted},
      * or the specified waiting time elapses.
-     *
+     * <p>
      * <p>If the current count is zero then this method returns immediately
      * with the value {@code true}.
-     *
+     * <p>
      * <p>If the current count is greater than zero then the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until one of three things happen:
@@ -249,10 +262,10 @@ public class CountDownLatch {
      * the current thread; or
      * <li>The specified waiting time elapses.
      * </ul>
-     *
+     * <p>
      * <p>If the count reaches zero then the method returns with the
      * value {@code true}.
-     *
+     * <p>
      * <p>If the current thread:
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
@@ -260,40 +273,41 @@ public class CountDownLatch {
      * </ul>
      * then {@link InterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
-     *
+     * <p>
      * <p>If the specified waiting time elapses then the value {@code false}
      * is returned.  If the time is less than or equal to zero, the method
      * will not wait at all.
      *
      * @param timeout the maximum time to wait
-     * @param unit the time unit of the {@code timeout} argument
+     * @param unit    the time unit of the {@code timeout} argument
      * @return {@code true} if the count reached zero and {@code false}
-     *         if the waiting time elapsed before the count reached zero
+     * if the waiting time elapsed before the count reached zero
      * @throws InterruptedException if the current thread is interrupted
-     *         while waiting
+     *                              while waiting
      */
     public boolean await(long timeout, TimeUnit unit)
-        throws InterruptedException {
+            throws InterruptedException {
         return sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
     }
 
     /**
      * Decrements the count of the latch, releasing all waiting threads if
      * the count reaches zero.
-     *
+     * <p>
      * <p>If the current count is greater than zero then it is decremented.
      * If the new count is zero then all waiting threads are re-enabled for
      * thread scheduling purposes.
-     *
+     * <p>
      * <p>If the current count equals zero then nothing happens.
      */
     public void countDown() {
+        // 调用AQS的释放共享锁方法
         sync.releaseShared(1);
     }
 
     /**
      * Returns the current count.
-     *
+     * <p>
      * <p>This method is typically used for debugging and testing purposes.
      *
      * @return the current count
