@@ -167,7 +167,7 @@ public class CountDownLatch {
             setState(count);
         }
 
-        // 获取还剩下的此时
+        // 获取还剩下的次数
         int getCount() {
             return getState();
         }

@@ -91,6 +91,7 @@ package java.util.concurrent;
  * @since 1.5
  * @author Doug Lea
  */
+// 对ExecutorService做了一些扩展，增加一些定时任务相关的功能，主要包含两大类：执行一次，重复多次执行。
 public interface ScheduledExecutorService extends ExecutorService {
 
     /**
@@ -107,6 +108,7 @@ public interface ScheduledExecutorService extends ExecutorService {
      *         scheduled for execution
      * @throws NullPointerException if command is null
      */
+    // 在指定延时后执行一次
     public ScheduledFuture<?> schedule(Runnable command,
                                        long delay, TimeUnit unit);
 
@@ -123,6 +125,7 @@ public interface ScheduledExecutorService extends ExecutorService {
      *         scheduled for execution
      * @throws NullPointerException if callable is null
      */
+    // 在指定延时后执行一次
     public <V> ScheduledFuture<V> schedule(Callable<V> callable,
                                            long delay, TimeUnit unit);
 
@@ -151,6 +154,8 @@ public interface ScheduledExecutorService extends ExecutorService {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if period less than or equal to zero
      */
+    // 在指定延时后开始执行，并在之后以指定时间间隔重复执行（间隔不包含任务执行的时间）
+    // 相当于之后的延时以任务开始计算
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
                                                   long initialDelay,
                                                   long period,
@@ -178,6 +183,8 @@ public interface ScheduledExecutorService extends ExecutorService {
      * @throws NullPointerException if command is null
      * @throws IllegalArgumentException if delay less than or equal to zero
      */
+    // 在指定延时后开始执行，并在之后以指定延时重复执行（间隔包含任务执行的时间）
+    // 相当于之后的延时以任务结束计算
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command,
                                                      long initialDelay,
                                                      long delay,

@@ -1351,6 +1351,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
          * workerCount, and so prevents false alarms that would add
          * threads when it shouldn't, by returning false.
          *
+         * 1. 如果正在运行的线程数小于corePoolSize，则新建一个线程执行给定的任务
+         * 调用addWorker()会检查runState和workerCount，防止错误警报
+         *
          * 2. If a task can be successfully queued, then we still need
          * to double-check whether we should have added a thread
          * (because existing ones died since last checking) or that
@@ -1358,9 +1361,16 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
          * recheck state and if necessary roll back the enqueuing if
          * stopped, or start a new thread if there are none.
          *
+         * 2. 如果任务可以被成功的添加到队列，仍然需要再次检查是否应该添加线程，
+         * （因为上次检查后发现有的已经死了），进入此方法后，池关闭。
+         * 所以需要重新检查，如果线程池停止，则取消排队，或者新建一个线程。
+         *
          * 3. If we cannot queue task, then we try to add a new
          * thread.  If it fails, we know we are shut down or saturated
          * and so reject the task.
+         *
+         * 3. 如果不能排队（队列已满），则尝试新建一个线程（使用非核心线程）。
+         * 如果失败，则根据拒绝策略拒绝任务。
          */
         int c = ctl.get();
         if (workerCountOf(c) < corePoolSize) {

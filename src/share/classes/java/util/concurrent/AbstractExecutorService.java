@@ -68,6 +68,7 @@ import java.util.*;
  * @since 1.5
  * @author Doug Lea
  */
+// 抽象类，运用模板方法设计模式实现了一部分方法，主要为执行有返回值任务、批量执行任务的方法。
 public abstract class AbstractExecutorService implements ExecutorService {
 
     /**
